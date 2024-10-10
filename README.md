@@ -1,9 +1,12 @@
-# sylius-mail-plugin
-Configure how your emails are sent by Sylius
+SyliusMailPlugin
+================
+[![Total Downloads](https://poser.pugx.org/gregoryeple/oauth-server-bundle/downloads.svg)](https://packagist.org/packages/gregoryeple/mail-plugin)
+
+Configure how your emails are sent by Sylius.
 
 # Installation-procedure
 ```bash
-$ composer require behappy/mail-plugin
+$ composer require gregoryeple/mail-plugin
 ```
 
 ## Enable the plugin
@@ -47,16 +50,18 @@ php bin/console doctrine:schema:update --dump-sql --force
 # That's it !
 In the BackOffice, you have now a new entry under the configuration menu where you can create your mail configuration. You can register one configuration by channel.
 
-/!\ At this moment, SMTP mode hasn't been tested.
-
 You can define the user sending address, their name and a reply-to.
 
 DKIM Signature is also fully supported by setting the domain, the selector and the private key content.
 
 Once your configuration is created, you can send a test email to any address and check the result. (don't forget do enable delivery in dev by modifying config_dev.yml)
 
-# Feel free to contribute
-You can also ask your questions at the mail address in the composer.json mentioning this package.
+# Repository history
 
-# Other
-You can also check our other packages (including Sylius plugins) at https://github.com/BeHappyCommunication
+This repository has been initialy created to make [BeHappyCommunication/SyliusMailPlugin](https://github.com/BeHappyCommunication/SyliusMailPlugin) compatible with PHP 8.
+
+Works on Sylius 1.13. (other versions have not been tested)
+
+## Credits
+- Stephane DECOCK, and [all contributors](https://github.com/gregoryeple/SyliusMailPlugin/contributors)
+- Forked from [SyliusMailPlugin](https://github.com/BeHappyCommunication/SyliusMailPlugin)
