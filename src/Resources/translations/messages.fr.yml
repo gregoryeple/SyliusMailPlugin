@@ -7,6 +7,7 @@ behappy_mail_plugin:
         check_mail: 'Test d''envoi de mail'
         grid:
             senderMail: 'Nom de l''expéditeur'
+            check: 'Tester'
         form:
             checkMail:
                 receiver: 'Adresse de récéption'

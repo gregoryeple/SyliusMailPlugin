@@ -14,6 +14,10 @@ use Symfony\Component\DependencyInjection\ContainerAwareInterface;
 use Symfony\Component\DependencyInjection\ContainerAwareTrait;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\Mime\Crypto\DkimSigner;
+use Symfony\Component\Mime\Exception\InvalidArgumentException;
+use Symfony\Component\Mime\Address;
+use Symfony\Component\Mime\Email;
 
 /**
  * Class MailerSubscriber
@@ -47,7 +51,7 @@ class MailerSubscriber implements EventSubscriberInterface, ContainerAwareInterf
     /**
      * @param EmailSendEvent $event
      *
-     * @throws \Swift_SwiftException
+     * @throws InvalidArgumentException
      */
     public function preSend(EmailSendEvent $event): void
     {
@@ -56,10 +60,10 @@ class MailerSubscriber implements EventSubscriberInterface, ContainerAwareInterf
         $em = $this->container->get('doctrine')->getManager();
         /** @var MailConfiguration $configuration */
         $configuration = $em->getRepository(MailConfiguration::class)->findOneByChannel($channel);
-        /** @var \Swift_Message $message */
+        /** @var Email $message */
         $message = $event->getMessage();
         
-        $message->setFrom($configuration->getSenderMail(), $configuration->getSenderName());
+        $message->from(new Address($configuration->getSenderMail(), $configuration->getSenderName()));
         
         if (!empty($configuration->getReplyToMail())) {
             $emailValidator = new EmailValidator();
@@ -73,7 +77,7 @@ class MailerSubscriber implements EventSubscriberInterface, ContainerAwareInterf
                 throw new \LogicException('Missing fields for DKIM sending');
             }
             $signer = $this->getDkimSigner($configuration->getDkimKey(), $configuration->getDkimDomain(), $configuration->getDkimSelector());
-            $message->attachSigner($signer);
+            $signer->sign($message);
         }
     }
     
@@ -82,16 +86,12 @@ class MailerSubscriber implements EventSubscriberInterface, ContainerAwareInterf
      * @param string $domainName
      * @param string $selector
      *
-     * @return \Swift_Signers_DKIMSigner
-     * @throws \Swift_SwiftException
+     * @return DkimSigner
+     * @throws InvalidArgumentException
      */
-    protected function getDkimSigner(string $dkimKey, string $domainName, string $selector): \Swift_Signers_DKIMSigner
+    protected function getDkimSigner(string $dkimKey, string $domainName, string $selector): DkimSigner
     {
-        $signer = new \Swift_Signers_DKIMSigner($dkimKey, $domainName, $selector);
-        
-        $signer->setBodyCanon('relaxed')
-            ->setHeaderCanon('relaxed')
-            ->setHashAlgorithm('rsa-sha256');
+        $signer = new DkimSigner($dkimKey, $domainName, $selector);
         
         return $signer;
     }

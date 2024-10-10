@@ -13,20 +13,26 @@ use Sylius\Component\Mailer\Sender\Adapter\AbstractAdapter;
 use Sylius\Component\Mailer\SyliusMailerEvents;
 use Symfony\Component\DependencyInjection\ContainerAwareInterface;
 use Symfony\Component\DependencyInjection\ContainerAwareTrait;
+use Symfony\Component\Mailer\Mailer;
+use Symfony\Component\Mailer\Transport\Dsn;
+use Symfony\Component\Mailer\Transport\Smtp\EsmtpTransportFactory;
+use Symfony\Component\Mime\Address;
+use Symfony\Component\Mime\Email;
+use Symfony\Component\Mime\Part\DataPart;
 
 class ConfiguredMailAdapter extends AbstractAdapter implements ContainerAwareInterface
 {
     use ContainerAwareTrait;
     
     /**
-     * @var \Swift_Mailer
+     * @var Mailer
      */
     protected $mailer;
     
     /**
-     * @param \Swift_Mailer $mailer
+     * @param Mailer $mailer
      */
-    public function __construct(\Swift_Mailer $mailer)
+    public function __construct(Mailer $mailer)
     {
         $this->mailer = $mailer;
     }
@@ -50,18 +56,18 @@ class ConfiguredMailAdapter extends AbstractAdapter implements ContainerAwareInt
         /** @var MailConfiguration $configuration */
         $configuration = $em->getRepository(MailConfiguration::class)->findOneByChannel($channel);
         
-        $message = (new \Swift_Message())
-            ->setSubject($renderedEmail->getSubject())
-            ->setFrom([$senderAddress => $senderName])
-            ->setTo($recipients)
-            ->setReplyTo($replyTo);
+        $message = (new Email())
+            ->subject($renderedEmail->getSubject())
+            ->from(new Address($senderAddress, $senderName))
+            ->to(...$recipients)
+            ->replyTo(...$replyTo);
         
-        $message->setBody($renderedEmail->getBody(), 'text/html');
+        $message->html($renderedEmail->getBody());
         
         foreach ($attachments as $attachment) {
-            $file = \Swift_Attachment::fromPath($attachment);
+            $file = new File($attachment);
             
-            $message->attach($file);
+            $message->addPart(new DataPart($file, $file->getFilename()));
         }
         
         $emailSendEvent = new EmailSendEvent($message, $email, $data, $recipients, $replyTo);
@@ -72,17 +78,17 @@ class ConfiguredMailAdapter extends AbstractAdapter implements ContainerAwareInt
         $sendingType = $configuration->getType();
         switch ($sendingType) {
             case MailConfiguration::TYPE_SMTP:
-                //TODO: Test/Debug SMTP Method
-                $transport = new \Swift_SmtpTransport(
+                $dnsOptions = [
+                    "encryption" => ($configuration->getEncryption() === MailConfiguration::ENCRYPTION_TLS ? 'tls' : 'ssl')
+                ];
+                $this->mailer = new Mailer((new EsmtpTransportFactory())->create(new Dsn(
+                    "smtp",
                     $configuration->getSmtpHost(),
+                    $configuration->getSmtpUser(),
+                    $configuration->getSmtpPassword(),
                     $configuration->getSmtpPort(),
-                    ($configuration->getEncryption() === MailConfiguration::ENCRYPTION_TLS ? 'tls' : 'ssl')
-                );
-                $transport
-                    ->setUsername($configuration->getSmtpUser())
-                    ->setPassword($configuration->getSmtpPassword())
-                    ->setTimeout(5);
-                $this->mailer = new \Swift_Mailer($transport);
+                    $dnsOptions
+                )));
                 break;
             case MailConfiguration::TYPE_DIRECT:
             default:

@@ -20,6 +20,7 @@ sylius_grid:
                         type: delete
                     checkMail:
                         type: checkMail
+                        label: 'behappy_mail_plugin.ui.grid.check'
                         options:
                             link:
                                 route: behappy_mail_plugin_check_mail
