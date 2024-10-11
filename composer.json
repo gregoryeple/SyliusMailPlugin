@@ -30,7 +30,7 @@
     "require": {
         "php": "^8.0",
         "sylius/sylius": "^1.1",
-        "symfony/mailer": "^5.4"
+        "symfony/mailer": "^5|^6|^7"
     },
     "require-dev": {
         "behat/behat": "^3.3",
